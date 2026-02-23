@@ -15,7 +15,7 @@ public class OldManSchedular {
     private final OldManService oldManService;
     private final AlimSendService alimSendService;
 
-    @Scheduled(cron = "0 13 17 * * *")
+    @Scheduled(cron = "0 21 9 * * *")
     public void runAtNineTwentyOne() {
         List<ReceiverDto> receivers = oldManService.getReceiversForAlim();
         alimSendService.sendAlim(receivers);

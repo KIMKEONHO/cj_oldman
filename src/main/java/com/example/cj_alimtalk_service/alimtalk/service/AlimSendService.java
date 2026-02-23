@@ -3,13 +3,12 @@ package com.example.cj_alimtalk_service.alimtalk.service;
 import com.example.cj_alimtalk_service.alimtalk.dto.response.AlimApiDataDto;
 import com.example.cj_alimtalk_service.alimtalk.dto.response.AlimApiRequestDto;
 import com.example.cj_alimtalk_service.alimtalk.dto.response.ReceiverDto;
-import org.springframework.http.MediaType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
@@ -69,7 +68,12 @@ public class AlimSendService {
         request.setLinkId(linkId);
         request.setLinkToken(linkToken);
         request.setData(data);
-        restTemplate.postForObject(baseUrl, request, String.class);
-        log.info("알림톡 발송 요청 완료, 수신자 수: {}", receivers.size());
+
+        try {
+            restTemplate.postForObject(baseUrl, request, String.class);
+            log.info("알림톡 발송 요청 완료, 수신자 수: {}", receivers.size());
+        } catch (RestClientException e) {
+            log.error("알림톡 API 호출 실패. url={}, 수신자 수={}", baseUrl, receivers.size(), e);
+        }
     }
 }
