@@ -11,5 +11,4 @@ public class CjAlimtalkServiceApplication {
     public static void main(String[] args) {
         SpringApplication.run(CjAlimtalkServiceApplication.class, args);
     }
-
 }
