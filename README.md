@@ -1,7 +1,8 @@
 # CJ 알림톡 서비스 (cj_alimtalk_service)
 
 Spring Boot 기반 알림톡 발송 서비스입니다.  
-매일 지정 시각(9시 21분)에 DB에 등록된 대상자(OldMan)를 조회해 알림톡 API로 전송합니다.
+앱 기동 시 **한 번** 오늘 등록된 대상자(OldMan)를 조회해 알림톡 API로 전송한 뒤 종료합니다.  
+**리눅스 cron**과 함께 사용해 매일 정해진 시간에만 실행하면 서버 리소스를 절약할 수 있습니다.
 
 ---
 
@@ -26,8 +27,9 @@ Spring Boot 기반 알림톡 발송 서비스입니다.
 
 ## 실행 방법
 
+### 로컬에서 한 번 실행 (개발/테스트)
+
 ```bash
-# 의존성 설치 및 부팅
 ./gradlew bootRun
 ```
 
@@ -35,6 +37,48 @@ Windows:
 
 ```cmd
 gradlew.bat bootRun
+```
+
+웹 서버는 띄우지 않으며(`web-application-type: none`), 기동 시 **CommandLineRunner**가 알림톡 발송 로직을 한 번 실행한 뒤 프로세스가 종료됩니다.
+
+### JAR 빌드 후 실행 (운영/cron)
+
+```bash
+# JAR 빌드
+./gradlew bootJar
+
+# 실행 (웹 서버 없이, 작업 1회 수행 후 종료)
+java -jar build/libs/cj_alimtalk_service-0.0.1-SNAPSHOT.jar
+```
+
+---
+
+## 리눅스 cron으로 정해진 시간에 실행
+
+앱을 상시 구동하지 않고, **cron이 정해진 시간에 JAR를 한 번 실행**하는 방식으로 사용할 수 있습니다.
+
+1. 빌드한 JAR를 서버에 복사 (예: `/opt/cj_alimtalk/`)
+2. `application.yml`, `application-secret.yml` 등 설정이 JAR와 같은 위치 또는 classpath에 오도록 구성
+3. cron 등록
+
+**예: 매일 9시 21분에 실행**
+
+```bash
+# crontab -e 로 편집
+21 9 * * * cd /opt/cj_alimtalk && java -jar cj_alimtalk_service-0.0.1-SNAPSHOT.jar >> /var/log/cj_alimtalk.log 2>&1
+```
+
+실행 스크립트를 두고 cron에서는 스크립트만 호출해도 됩니다.
+
+```bash
+# /opt/cj_alimtalk/run.sh
+#!/bin/bash
+cd /opt/cj_alimtalk
+java -jar cj_alimtalk_service-0.0.1-SNAPSHOT.jar
+```
+
+```cron
+21 9 * * * /opt/cj_alimtalk/run.sh >> /var/log/cj_alimtalk.log 2>&1
 ```
 
 ---
@@ -47,11 +91,17 @@ gradlew.bat bootRun
 
 ```yaml
 spring:
+  application:
+    name: cj_alimtalk_service
   datasource:
     url: jdbc:mysql://호스트:포트/DB명?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul
     username: 사용자명
     password: 비밀번호
     driver-class-name: com.mysql.cj.jdbc.Driver
+  main:
+    web-application-type: none   # 웹 서버 미기동 (cron 실행용)
+  config:
+    import: optional:classpath:application-secret.yml
 ```
 
 실제 DB URL·계정은 환경에 맞게 수정하세요.
@@ -82,39 +132,47 @@ API 키·URL 등은 **application-secret.yml**에 두며, 이 파일은 `.gitign
 
 ```
 src/main/java/com/example/cj_alimtalk_service/
-├── CjAlimtalkServiceApplication.java   # 진입점, @EnableScheduling
+├── CjAlimtalkServiceApplication.java   # 진입점
 ├── config/
-│   └── RestTemplateConfig.java        # RestTemplate 빈
+│   └── RestTemplateConfig.java         # RestTemplate 빈
 └── alimtalk/
     ├── entity/
-    │   └── OldMan.java                # kw_oldman_sms 테이블 매핑
+    │   └── OldMan.java                 # kw_oldman_sms 테이블 매핑
     ├── repository/
-    │   └── OldManRepository.java      # OldMan 조회 (crtdt 기준)
+    │   └── OldManRepository.java       # OldMan 조회 (crtdt 기준)
     ├── service/
-    │   ├── OldManService.java         # 오늘 등록분 조회 → ReceiverDto 변환
-    │   ├── AlimSendService.java       # 알림톡 API 요청 조립 및 전송
-    │   └── OldManSchedular.java       # 매일 9:21 실행 스케줄러
+    │   ├── OldManService.java          # 오늘 등록분 조회 → ReceiverDto 변환
+    │   └── AlimSendService.java        # 알림톡 API 요청 조립 및 전송
+    ├── runner/
+    │   └── AlimJobRunner.java          # 기동 시 1회 실행 (CommandLineRunner)
     └── dto/response/
-        ├── AlimApiRequestDto.java     # API 최상위 요청 (link_id, link_token, data)
-        ├── AlimApiDataDto.java        # data 블록 (callback, receiver 등)
-        └── ReceiverDto.java           # 수신자 1명 (dstaddr, text, 템플릿 변수)
+        ├── AlimApiRequestDto.java      # API 최상위 요청 (link_id, link_token, data)
+        ├── AlimApiDataDto.java         # data 블록 (callback, receiver 등)
+        └── ReceiverDto.java            # 수신자 1명 (dstaddr, text, 템플릿 변수)
 ```
 
 ---
 
 ## 동작 흐름
 
-1. **스케줄러** (`OldManSchedular.runAtNineTwentyOne`)  
-   - 매일 **9시 21분**에 실행됩니다.
+1. **앱 기동**  
+   - `java -jar ...` 또는 `bootRun`으로 실행합니다.  
+   - `spring.main.web-application-type: none`으로 웹 서버는 띄우지 않습니다.
 
-2. **데이터 조회** (`OldManService.getReceiversForAlim`)  
+2. **AlimJobRunner** (CommandLineRunner)  
+   - Spring Boot가 컨텍스트 준비 후 **자동으로 한 번** `run()`을 호출합니다.  
+   - `OldManService.getReceiversForAlim()` → 오늘 00:00 이후 등록된 `OldMan` 조회 후 `ReceiverDto` 리스트로 변환  
+   - `AlimSendService.sendAlim(receivers)` → API 포맷으로 조립 후 POST 전송  
+   - `System.exit(0)` 로 프로세스 종료
+
+3. **데이터 조회** (`OldManService.getReceiversForAlim`)  
    - **오늘 00:00 이후** `crtdt`로 등록된 `OldMan`을 조회합니다.  
    - 각 건을 알림톡 API 수신자 포맷(`ReceiverDto`)으로 변환합니다.
 
-3. **알림톡 전송** (`AlimSendService.sendAlim`)  
+4. **알림톡 전송** (`AlimSendService.sendAlim`)  
    - 설정(application-secret)에서 link_id, link_token, callback 등 읽어  
    - `AlimApiRequestDto`로 조립 후 **RestTemplate**으로 API `base-url`에 POST 전송합니다.  
-   - 전송 실패 시 예외는 로그만 남기고, 스케줄러는 정상 종료됩니다.
+   - 전송 실패 시 예외는 로그만 남깁니다.
 
 ---
 
