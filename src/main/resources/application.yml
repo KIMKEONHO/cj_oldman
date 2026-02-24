@@ -6,6 +6,8 @@ spring:
     password: cjdb
     username: cjdb
     url: jdbc:mysql://172.30.1.112:3306/cjdb
+  main:
+    web-application-type: none
 
   # resources 아래 application-secret.yml 로드 (없으면 무시)
   config:
