@@ -60,15 +60,16 @@ public class AlimSendService {
     /**
      * 수신자 목록을 알림톡 API 포맷으로 조립한 뒤 해당 주소로 전송한다.
      * <p>
-     * 전송 실패 시 예외는 로그만 남기고 호출부로 전파하지 않는다.
+     * 전송 실패 시 예외는 로그만 남기고 false를 반환한다.
      * </p>
      *
      * @param receivers 발송할 수신자 목록 (ReceiverDto)
+     * @return API 호출 성공 시 true, 실패 시 false
      */
-    public void sendAlim(List<ReceiverDto> receivers) {
+    public boolean sendAlim(List<ReceiverDto> receivers) {
         if (receivers.isEmpty()) {
             log.info("발송할 수신자가 없습니다.");
-            return;
+            return false;
         }
 
         AlimApiDataDto data = new AlimApiDataDto();
@@ -87,9 +88,10 @@ public class AlimSendService {
 
         try {
             restTemplate.postForObject(baseUrl, request, String.class);
-            log.info("알림톡 발송 요청 완료, 수신자 수: {}", receivers.size());
+            return true;
         } catch (RestClientException e) {
             log.error("알림톡 API 호출 실패. url={}, 수신자 수={}", baseUrl, receivers.size(), e);
+            return false;
         }
     }
 }

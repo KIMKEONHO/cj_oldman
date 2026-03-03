@@ -1,6 +1,7 @@
 package com.example.cj_alimtalk_service.alimtalk.runner;
 
 import com.example.cj_alimtalk_service.alimtalk.dto.response.ReceiverDto;
+import com.example.cj_alimtalk_service.alimtalk.entity.OldMan;
 import com.example.cj_alimtalk_service.alimtalk.service.AlimSendService;
 import com.example.cj_alimtalk_service.alimtalk.service.OldManService;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,8 @@ public class AlimJobRunner implements CommandLineRunner {
     @Override
     public void run(String... args) {
         log.info("알림톡 발송 작업 시작");
-        List<ReceiverDto> receivers = oldManService.getReceiversForAlim();
+        List<OldMan> oldMen = oldManService.getOldMenForAlim();
+        List<ReceiverDto> receivers = oldManService.getReceiversFromOldMen(oldMen);
         alimSendService.sendAlim(receivers);
         log.info("알림톡 발송 작업 완료");
         System.exit(0);

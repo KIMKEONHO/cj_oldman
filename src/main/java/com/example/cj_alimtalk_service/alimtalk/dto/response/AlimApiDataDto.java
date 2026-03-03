@@ -1,12 +1,14 @@
 package com.example.cj_alimtalk_service.alimtalk.dto.response;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import tools.jackson.databind.PropertyNamingStrategies;
-import tools.jackson.databind.annotation.JsonNaming;
 
 import java.util.List;
 
@@ -24,6 +26,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+@JsonPropertyOrder({"callback", "dept_no", "msg_type", "k_template_code", "kakao_dsptch_profl", "k_next", "receiver"})
 public class AlimApiDataDto {
     /** 발신번호 */
     private String callback;
@@ -32,10 +35,12 @@ public class AlimApiDataDto {
     /** 메시지 타입: kko_a(알림톡), kko_f(친구톡) */
     private String msgType;
     /** 알림톡 템플릿 코드 */
+    @JsonProperty("k_template_code")
     private String kTemplateCode;
     /** 카카오 발신 프로필 (@프로필명) */
     private String kakaoDsptchProfl;
     /** 발송 실패 시 대체 발송 옵션: 1=카카오 재발송, 2=text2 재발송 */
+    @JsonProperty("k_next")
     private String kNext;
     /** 수신자 목록 */
     private List<ReceiverDto> receiver;

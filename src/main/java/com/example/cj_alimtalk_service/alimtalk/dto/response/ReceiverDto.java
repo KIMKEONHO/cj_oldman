@@ -1,12 +1,13 @@
 package com.example.cj_alimtalk_service.alimtalk.dto.response;
 
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import tools.jackson.databind.PropertyNamingStrategies;
-import tools.jackson.databind.annotation.JsonNaming;
 
 /**
  * 알림톡 API 수신자 1명 분 DTO.
@@ -20,6 +21,7 @@ import tools.jackson.databind.annotation.JsonNaming;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+@JsonPropertyOrder({"dstaddr", "text", "text2", "opt_name", "kakao_variable1", "kakao_variable2", "kakao_variable3"})
 public class ReceiverDto {
     /** 수신자 전화번호 */
     private String dstaddr;
@@ -31,6 +33,6 @@ public class ReceiverDto {
     private String optName;
     /** 템플릿 변수 1~3 (템플릿에 맞게 사용) */
     private String kakaoVariable1;
-    private String kakaoVariable2;
-    private String kakaoVariable3;
+//    private String kakaoVariable2;
+//    private String kakaoVariable3;
 }
