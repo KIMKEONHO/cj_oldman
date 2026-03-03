@@ -36,9 +36,7 @@ public class OldManService {
 
         String todayStr = now.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
-        log.info("변환 날짜 : " + todayStr);
-
-        return oldManRepository.findBySmsdate("20260304");
+        return oldManRepository.findBySmsdate(todayStr);
     }
 
     /**
