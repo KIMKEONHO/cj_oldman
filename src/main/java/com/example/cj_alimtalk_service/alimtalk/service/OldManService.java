@@ -7,9 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,11 +30,12 @@ public class OldManService {
      * @return 알림톡 발송 대상 OldMan 목록
      */
     public List<OldMan> getOldMenForAlim() {
-        LocalDate now = LocalDate.now();
 
-        String todayStr = now.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        LocalDateTime startOfToday = LocalDateTime.now()
+                .toLocalDate()
+                .atStartOfDay();
 
-        return oldManRepository.findBySmsdate(todayStr);
+        return oldManRepository.findByOldManId_CrtdtAfter(startOfToday);
     }
 
     /**
